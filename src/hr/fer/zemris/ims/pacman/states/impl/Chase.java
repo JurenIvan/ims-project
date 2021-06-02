@@ -25,7 +25,6 @@ public class Chase extends AbstractState {
     @Override
     public int makeAMove(List<Move> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
         Location pacLocation = findPacman(mySurroundings);
-
         return 0;
     }
 }
