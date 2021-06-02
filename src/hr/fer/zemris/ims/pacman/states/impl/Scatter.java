@@ -5,12 +5,10 @@ import hr.fer.zemris.ims.pacman.Location;
 import hr.fer.zemris.ims.pacman.domain.Move;
 import hr.fer.zemris.ims.pacman.states.AbstractState;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
-import mmaracic.gameaiframework.WorldEntity;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static mmaracic.gameaiframework.WorldEntity.*;
+import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class Scatter extends AbstractState {
 
@@ -19,8 +17,8 @@ public class Scatter extends AbstractState {
         if (moves.size() == 1) return 0;
 
         int mapCorner = myInfo.getID() % 4;
-        if(mapCorner == 0){
-            int targetX = - mySurroundings.getDimensionX() / 2;
+        if (mapCorner == 0) {
+            int targetX = -mySurroundings.getDimensionX() / 2;
             int targetY = mySurroundings.getDimensionY() / 2;
 
             Vector3f myPosition = myInfo.getPosition();
