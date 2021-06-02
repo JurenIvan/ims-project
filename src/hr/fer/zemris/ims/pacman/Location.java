@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import static java.lang.Math.sqrt;
+import static java.util.Arrays.stream;
 
 @Getter
 @EqualsAndHashCode
@@ -24,5 +25,9 @@ public class Location {
 
     public Location move(Move move) {
         return new Location(x + move.getX(), y + move.getY());
+    }
+
+    public Location move(Move... moves) {
+        return new Location(x + stream(moves).mapToInt(Move::getX).sum(), y + stream(moves).mapToInt(Move::getY).sum());
     }
 }

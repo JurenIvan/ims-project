@@ -2,10 +2,15 @@ package hr.fer.zemris.ims.pacman.states;
 
 import hr.fer.zemris.ims.pacman.Location;
 import hr.fer.zemris.ims.pacman.domain.Move;
+import mmaracic.gameaiframework.PacmanVisibleWorld;
+import mmaracic.gameaiframework.WorldEntity;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractState implements State {
+
+    public static final String PACMAN_CONSTANT = "Pacman";
 
     private static int findClosest(List<Move> moves, Location target, Location curr) {
         int index = 0;
@@ -20,6 +25,23 @@ public abstract class AbstractState implements State {
             }
         }
         return index;
+    }
+
+    protected Location findPacman(PacmanVisibleWorld mySurroundings) {
+        for (int i = -mySurroundings.getDimensionX() / 2; i <= mySurroundings.getDimensionX() / 2; i++) {
+            for (int j = -mySurroundings.getDimensionY() / 2; j <= mySurroundings.getDimensionY() / 2; j++) {
+                if (i == 0 && j == 0) continue;
+                List<WorldEntity.WorldEntityInfo> elements = mySurroundings.getWorldInfoAt(i, j);
+                Map<Integer, Object> metaHash = mySurroundings.getWorldMetadataAt(i, j);
+                if (elements != null && metaHash != null) {
+                    for (WorldEntity.WorldEntityInfo el : elements) {
+                        if (el.getIdentifier().compareToIgnoreCase(PACMAN_CONSTANT) == 0)
+                            return new Location(i, j);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
 

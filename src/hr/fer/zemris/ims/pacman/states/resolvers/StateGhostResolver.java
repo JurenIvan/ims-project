@@ -25,7 +25,7 @@ public class StateGhostResolver {
     public static final int TOTAL_CYCLE_TIME = 27;
     public static final int SCATTER_TIME = 7;
     private final Map<Integer, State> stateMap = new HashMap<>();
-    private LocalDateTime frightenedStartTime = null;
+    private LocalDateTime frightenedStartTime = now().minusDays(1);
 
     public void setFrightenedTime() {
         this.frightenedStartTime = now();
@@ -36,7 +36,7 @@ public class StateGhostResolver {
             stateMap.put(id, scatterState);
         }
 
-        if (frightenedStartTime != null && frightenedStartTime.until(now(), SECONDS) < FRIGHTENED_LENGTH) {
+        if (frightenedStartTime.until(now(), SECONDS) < FRIGHTENED_LENGTH) {
             stateMap.put(id, frightenedState);
             return frightenedState;
         }
