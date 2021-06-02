@@ -15,14 +15,14 @@ public enum Move {
     private final int x;
     private final int y;
 
-    public Move from(int x, int y) {
+    public static Move from(int x, int y) {
         if (UP.x == x && UP.y == y) return UP;
         if (DOWN.x == x && DOWN.y == y) return DOWN;
         if (LEFT.x == x && LEFT.y == y) return LEFT;
         return RIGHT;
     }
 
-    public Move from(int[] move) {
+    public static Move from(int[] move) {
         return from(move[0], move[1]);
     }
 }

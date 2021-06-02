@@ -7,7 +7,7 @@ import java.util.List;
 
 public abstract class AbstractState implements State {
 
-    private static int findClosest(List<Move> moves, Location target, Location curr) {
+    public static int findClosest(List<Move> moves, Location target, Location curr) {
         int index = 0;
         Move move = moves.get(0);
         double dist = curr.move(move).distanceTo(target);
