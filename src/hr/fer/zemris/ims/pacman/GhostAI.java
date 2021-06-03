@@ -92,17 +92,14 @@ public class GhostAI extends AgentAI {
 
     private void removeLastFromHistory(List<Move> niceMoves, WorldEntityInfo myInfo) {
         var list = history.get(myInfo.getID());
-//        printStatus("before" + niceMoves.size());
-        niceMoves.remove(list.get(list.size() - 1).opposite());
-//        printStatus("after" + niceMoves.size());
+        if(list.size() > 0) {
+            niceMoves.remove(list.get(list.size() - 1).opposite());
+        }
     }
 
     private void initializeHistoryMap(WorldEntityInfo myInfo) {
         if (!history.containsKey(myInfo.getID())) {
             List<Move> list = new ArrayList<>();
-            list.add(LEFT);
-            list.add(LEFT);
-            list.add(LEFT);
             history.put(myInfo.getID(), list);
         }
     }
