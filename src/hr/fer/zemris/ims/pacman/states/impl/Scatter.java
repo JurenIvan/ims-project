@@ -1,13 +1,12 @@
 package hr.fer.zemris.ims.pacman.states.impl;
 
-import com.jme3.math.Vector3f;
-import hr.fer.zemris.ims.pacman.Location;
 import hr.fer.zemris.ims.pacman.domain.Move;
 import hr.fer.zemris.ims.pacman.states.AbstractState;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
 
 import java.util.List;
 
+import static hr.fer.zemris.ims.pacman.domain.Move.*;
 import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class Scatter extends AbstractState {
@@ -17,23 +16,28 @@ public class Scatter extends AbstractState {
         if (moves.size() == 1) return 0;
 
         int mapCorner = myInfo.getID() % 4;
-        int targetX, targetY;
 
         if (mapCorner == 0) {
-            targetX = -mySurroundings.getDimensionX() / 2;
-            targetY = mySurroundings.getDimensionY() / 2;
+            return findMove(moves, LEFT, UP, DOWN, RIGHT);
         } else if (mapCorner == 1) {
-            targetX = mySurroundings.getDimensionX() / 2;
-            targetY = mySurroundings.getDimensionY() / 2;
+            return findMove(moves, RIGHT, UP, DOWN, LEFT);
         } else if (mapCorner == 2) {
-            targetX = -mySurroundings.getDimensionX() / 2;
-            targetY = -mySurroundings.getDimensionY() / 2;
+            return findMove(moves, LEFT, DOWN, UP, RIGHT);
         } else {
-            targetX = mySurroundings.getDimensionX() / 2;
-            targetY = -mySurroundings.getDimensionY() / 2;
+            return findMove(moves, RIGHT, DOWN, UP, LEFT);
         }
 
-        Vector3f myPosition = myInfo.getPosition();
-        return findClosest(moves, new Location(targetX, targetY), new Location((int) myPosition.x, (int) myPosition.y));
+    }
+
+    private int findMove(List<Move> moves, Move first, Move second, Move third, Move forth) {
+        if (moves.contains(first)) {
+            return moves.indexOf(first);
+        } else if (moves.contains(second)) {
+            return moves.indexOf(second);
+        } else if (moves.contains(third)) {
+            return moves.indexOf(third);
+        } else {
+            return moves.indexOf(forth);
+        }
     }
 }
