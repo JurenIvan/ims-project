@@ -1,30 +1,33 @@
 package hr.fer.zemris.ims.pacman;
 
 import hr.fer.zemris.ims.pacman.domain.Move;
+import hr.fer.zemris.ims.pacman.domain.Pair;
 import mmaracic.gameaiframework.AgentAI;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
 import mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static hr.fer.zemris.ims.pacman.domain.Move.LEFT;
 import static java.util.stream.Collectors.toList;
 
 public class GhostAI extends AgentAI {
 
+    public static final double COOKIE_GREEDINESS = 0;
     private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
     private static final Map<Integer, List<Move>> history = new HashMap<>();
 
     private int findClosest(List<Move> moves, Location location) {
         int index = 0;
         Move move = moves.get(0);
-        float dist = Math.abs(location.getX() - move.getX()) + Math.abs(location.getY() - move.getY());
+        double dist = Math.sqrt((location.getX() - move.getX()) * (location.getX() - move.getX()) + (location.getY() - move.getY()) * (location.getY() - move.getY()));
         for (int i = 1; i < moves.size(); i++) {
             move = moves.get(i);
-            float currDist = Math.abs(location.getX() - move.getX()) + Math.abs(location.getY() - move.getY());
+            double currDist = Math.sqrt((location.getX() - move.getX()) * (location.getX() - move.getX()) + (location.getY() - move.getY()) * (location.getY() - move.getY()));
             if (currDist < dist) {
                 dist = currDist;
                 index = i;
@@ -64,7 +67,7 @@ public class GhostAI extends AgentAI {
             return prepareReturn(myInfo, niceMoves.get(0), moves, "Default non back!");
         }
 
-        int ghostMoveIndex = findGhost(niceMoves, mySurroundings, myInfo);
+        int ghostMoveIndex = find(niceMoves, mySurroundings, "Ghost");
         if (ghostMoveIndex != -1) {    //vidis ghosta
             Move towardGhost = niceMoves.get(ghostMoveIndex);
             Move oppositeMove = towardGhost.opposite();
@@ -75,8 +78,14 @@ public class GhostAI extends AgentAI {
             var chosen = random(niceMoves);
             return prepareReturn(myInfo, chosen, moves, "Ghost anything!");
         }
+        if (Math.random() < COOKIE_GREEDINESS) {
+            int cookieMoveIndex = find(niceMoves, mySurroundings, "Point");
+            if (cookieMoveIndex != -1) {
+                return prepareReturn(myInfo, niceMoves.get(cookieMoveIndex), moves, "Cookie fever!");
+            }
+        }
 
-        var pickedMove = random(niceMoves);      //add random
+        var pickedMove = random(niceMoves);
         return prepareReturn(myInfo, pickedMove, moves, "Last default!");
     }
 
@@ -92,7 +101,7 @@ public class GhostAI extends AgentAI {
 
     private void removeLastFromHistory(List<Move> niceMoves, WorldEntityInfo myInfo) {
         var list = history.get(myInfo.getID());
-        if(list.size() > 0) {
+        if (list.size() > 0) {
             niceMoves.remove(list.get(list.size() - 1).opposite());
         }
     }
@@ -148,7 +157,7 @@ public class GhostAI extends AgentAI {
     }
 
 
-    private int findGhost(List<Move> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+    private int find(List<Move> moves, PacmanVisibleWorld mySurroundings, String lookFor) {
         for (int i = -mySurroundings.getDimensionX() / 2; i <= mySurroundings.getDimensionX() / 2; i++) {
             for (int j = -mySurroundings.getDimensionY() / 2; j <= mySurroundings.getDimensionY() / 2; j++) {
                 if (i == 0 && j == 0) {
@@ -159,14 +168,12 @@ public class GhostAI extends AgentAI {
                 HashMap<Integer, Object> metaHash = mySurroundings.getWorldMetadataAt(i, j);
                 if (elements != null && metaHash != null) {
                     for (WorldEntityInfo el : elements) {
-                        if (el.getIdentifier().compareToIgnoreCase("Ghost") == 0) {
+                        if (el.getIdentifier().compareToIgnoreCase(lookFor) == 0) {
                             return findClosest(moves, new Location(i, j));
                         }
                     }
                 }
-
             }
-
         }
         return -1;
     }
