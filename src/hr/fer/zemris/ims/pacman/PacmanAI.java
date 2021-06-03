@@ -8,13 +8,13 @@ import mmaracic.gameaiframework.PacmanVisibleWorld;
 import java.util.*;
 
 import static hr.fer.zemris.ims.pacman.AIUtils.*;
-import static java.lang.Float.MAX_VALUE;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class PacmanAI extends AgentAI {
 
+    public static final int TARGET_DURATION_TIMEOUT = 10;
     private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
     private static final Map<Integer, List<Move>> history = new HashMap<>();
     private final HashSet<Location> points = new HashSet<>();
@@ -28,6 +28,7 @@ public class PacmanAI extends AgentAI {
 
     @Override
     public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+        targetDuration++;
         initializeHistoryMap(myInfo, history);
         List<Move> niceMoves = moves.stream().map(Move::from).collect(toList());
         powerUpStatus.setEnabled(myInfo.hasProperty(PacmanAgent.powerupPropertyName));
@@ -65,7 +66,7 @@ public class PacmanAI extends AgentAI {
             if (powerUpStatus.isPowerUpEnabled()) {
                 return prepareReturn(myInfo, niceMoves.get(index), moves, "Chase", history);
             }
-            niceMoves.remove(index);
+            niceMoves.remove(ghostIndex);
             if (niceMoves.size() == 1) {
                 return prepareReturn(myInfo, niceMoves.get(0), moves, "Run no option", history);
             }
@@ -76,51 +77,6 @@ public class PacmanAI extends AgentAI {
         }
 
 
-        //move toward the point
-        //pick next if arrived
-//        double targetDistance = MAX_VALUE;
-        if (targetLocation == myLocation) {
-            targetLocation = points.iterator().next();
-//            targetDistance = myLocation.distanceTo(targetLocation);
-            targetDuration = 0;
-        }
-
-        targetDuration++;
-
-        //sticking with target too long -> got stuck
-        //dont get stuck
-        if (targetDuration > 10) {
-            ArrayList<Location> pointList = new ArrayList<>(points);
-            int choice = r.nextInt(pointList.size());
-
-            targetLocation = pointList.get(choice);
-//            targetDistance = myLocation.distanceTo(targetLocation);
-            targetDuration = 0;
-        }
-
-        //select move
-        double currMinPDistance = MAX_VALUE;
-        Location nextLocation = myLocation;
-        int moveIndex = 0;
-
-        //double ghostDistance = Double.MAX_VALUE;
-//        for (int i = moves.size() - 1; i >= 0; i--) {
-//            int[] move = moves.get(i);
-//            Location moveLocation = new Location(myLocation.getX() + move[0], myLocation.getY() + move[1]);
-//            double newPDistance = moveLocation.distanceTo(targetLocation);
-//            double newGDistance = (ghostDistance < MAX_VALUE) ? moveLocation.distanceTo(ghostLocation) : MAX_VALUE;
-//            if (newPDistance <= currMinPDistance && newGDistance > 1) {
-//                //that way
-//                currMinPDistance = newPDistance;
-//                nextLocation = moveLocation;
-//                moveIndex = i;
-//            }
-//        }
-
-        points.remove(myLocation);
-        myLocation = nextLocation;
-        points.remove(myLocation);
-
-        return moveIndex;
+        return eat(false, moves, niceMoves, mySurroundings, myInfo);
     }
 }
