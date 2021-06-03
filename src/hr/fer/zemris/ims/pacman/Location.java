@@ -34,6 +34,10 @@ public class Location implements Comparable<Location> {
         return new Location(x + stream(moves).mapToInt(Move::getX).sum(), y + stream(moves).mapToInt(Move::getY).sum());
     }
 
+    public Location add(Location location) {
+        return new Location(x + location.getX(), y + location.getY());
+    }
+
     @Override
     public int compareTo(Location o) {
         return x == o.x ? compare(y, o.y) : compare(x, o.x);

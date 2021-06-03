@@ -1,22 +1,25 @@
 package hr.fer.zemris.ims.pacman;
 
-import com.jme3.math.Vector3f;
+import hr.fer.zemris.ims.pacman.domain.Move;
 import mmaracic.gameaiframework.AgentAI;
 import mmaracic.gameaiframework.PacmanAgent;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
-import mmaracic.gameaiframework.WorldEntity;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
 
+import static hr.fer.zemris.ims.pacman.AIUtils.*;
 import static java.lang.Float.MAX_VALUE;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
+import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class PacmanAI extends AgentAI {
 
     private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
-
+    private static final Map<Integer, List<Move>> history = new HashMap<>();
     private final HashSet<Location> points = new HashSet<>();
+    private final HashSet<Location> powerUps = new HashSet<>();
+    private final HashSet<Location> ghosts = new HashSet<>();
     private final Random r = new Random();
     private Location myLocation = new Location(0, 0);
     private Location targetLocation = myLocation;
@@ -24,47 +27,54 @@ public class PacmanAI extends AgentAI {
     private boolean targetPowerUp;
 
     @Override
-    public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntity.WorldEntityInfo myInfo) {
-        int radiusX = mySurroundings.getDimensionX() / 2;
-        int radiusY = mySurroundings.getDimensionY() / 2;
-
+    public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+        initializeHistoryMap(myInfo, history);
+        List<Move> niceMoves = moves.stream().map(Move::from).collect(toList());
         powerUpStatus.setEnabled(myInfo.hasProperty(PacmanAgent.powerupPropertyName));
+        ghosts.clear();
 
-        Vector3f pos = myInfo.getPosition();
-        printStatus("Location x: " + pos.x + " y: " + pos.y);
+        Location myAbsoluteLocation = new Location((int) myInfo.getPosition().getX(), (int) myInfo.getPosition().getY());
+        printStatus("Location x: " + myAbsoluteLocation);
 
-        double ghostDistance = Double.MAX_VALUE;
-        Location ghostLocation = null;
-        for (int i = -radiusX; i <= radiusX; i++) {
-            for (int j = -radiusY; j <= radiusY; j++) {
+        if (niceMoves.size() == 1) {
+            return prepareReturn(myInfo, niceMoves.get(0), moves, "Default!", history);
+        }
+
+        for (int i = -mySurroundings.getDimensionX() / 2; i <= mySurroundings.getDimensionX(); i++) {
+            for (int j = -mySurroundings.getDimensionY() / 2; j <= mySurroundings.getDimensionY() / 2; j++) {
                 if (i == 0 && j == 0) continue;
-                Location tempLocation = new Location(myLocation.getX() + i, myLocation.getY() + j);
-                ArrayList<WorldEntity.WorldEntityInfo> neighPosInfos = mySurroundings.getWorldInfoAt(i, j);
+                Location tempLocation = new Location(i, j);
+                List<WorldEntityInfo> neighPosInfos = mySurroundings.getWorldInfoAt(i, j);
                 if (neighPosInfos != null) {
-                    for (WorldEntity.WorldEntityInfo info : neighPosInfos) {
-                        if (info.getIdentifier().compareToIgnoreCase("Pacman") == 0) {
-                            //Ignore myself
-                        } else if (info.getIdentifier().compareToIgnoreCase("Wall") == 0) {
-                            //Its a wall, who cares!
-                        } else if (info.getIdentifier().compareToIgnoreCase("Point") == 0 ||
-                                info.getIdentifier().compareToIgnoreCase("Powerup") == 0) {
-                            //Remember where it is!
-                            double currPointDistance = myLocation.distanceTo(tempLocation);
-                            points.add(tempLocation);
+                    for (WorldEntityInfo info : neighPosInfos) {
+                        if (info.getIdentifier().compareToIgnoreCase("Point") == 0) {
+                            points.add(myAbsoluteLocation.add(tempLocation));
+                        } else if (info.getIdentifier().compareToIgnoreCase("Powerup") == 0) {
+                            powerUps.add(myAbsoluteLocation.add(tempLocation));
                         } else if (info.getIdentifier().compareToIgnoreCase("Ghost") == 0) {
-                            //Remember him!
-                            double currGhostDistance = myLocation.distanceTo(tempLocation);
-                            if (currGhostDistance < ghostDistance) {
-                                ghostDistance = currGhostDistance;
-                                ghostLocation = tempLocation;
-                            }
-                        } else {
-                            printStatus("I dont know what " + info.getIdentifier() + " is!");
+                            ghosts.add(myAbsoluteLocation.add(tempLocation));
                         }
                     }
                 }
             }
         }
+
+        if (!ghosts.isEmpty()) {
+            Location target = ghosts.stream().min(comparing(myAbsoluteLocation::distanceTo)).orElseThrow();
+            int index = findClosest(niceMoves, target);
+            if (powerUpStatus.isPowerUpEnabled()) {
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "Chase", history);
+            }
+            niceMoves.remove(index);
+            if (niceMoves.size() == 1) {
+                return prepareReturn(myInfo, niceMoves.get(0), moves, "Run no option", history);
+            }
+
+            if(!powerUps.isEmpty()){
+
+            }
+        }
+
 
         //move toward the point
         //pick next if arrived
@@ -93,18 +103,19 @@ public class PacmanAI extends AgentAI {
         Location nextLocation = myLocation;
         int moveIndex = 0;
 
-        for (int i = moves.size() - 1; i >= 0; i--) {
-            int[] move = moves.get(i);
-            Location moveLocation = new Location(myLocation.getX() + move[0], myLocation.getY() + move[1]);
-            double newPDistance = moveLocation.distanceTo(targetLocation);
-            double newGDistance = (ghostDistance < MAX_VALUE) ? moveLocation.distanceTo(ghostLocation) : MAX_VALUE;
-            if (newPDistance <= currMinPDistance && newGDistance > 1) {
-                //that way
-                currMinPDistance = newPDistance;
-                nextLocation = moveLocation;
-                moveIndex = i;
-            }
-        }
+        //double ghostDistance = Double.MAX_VALUE;
+//        for (int i = moves.size() - 1; i >= 0; i--) {
+//            int[] move = moves.get(i);
+//            Location moveLocation = new Location(myLocation.getX() + move[0], myLocation.getY() + move[1]);
+//            double newPDistance = moveLocation.distanceTo(targetLocation);
+//            double newGDistance = (ghostDistance < MAX_VALUE) ? moveLocation.distanceTo(ghostLocation) : MAX_VALUE;
+//            if (newPDistance <= currMinPDistance && newGDistance > 1) {
+//                //that way
+//                currMinPDistance = newPDistance;
+//                nextLocation = moveLocation;
+//                moveIndex = i;
+//            }
+//        }
 
         points.remove(myLocation);
         myLocation = nextLocation;
