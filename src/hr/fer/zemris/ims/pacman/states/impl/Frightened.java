@@ -4,7 +4,6 @@ import hr.fer.zemris.ims.pacman.domain.Move;
 import hr.fer.zemris.ims.pacman.states.AbstractState;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 

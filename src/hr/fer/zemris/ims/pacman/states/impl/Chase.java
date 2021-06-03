@@ -17,14 +17,16 @@ public class Chase extends AbstractState {
 
     private static final Map<Integer, Function<Location, Location>> TARGET_FUN_MAP = Map.of(
             0, identity(),
-            1, location -> location.move(UP, UP, LEFT, LEFT),
-            2, location -> location.move(LEFT, DOWN, DOWN),
-            3, location -> location.move(UP, UP, RIGHT, RIGHT));
+            1, target -> target.move(UP, UP, LEFT, LEFT),
+            2, target -> target.move(LEFT, DOWN, DOWN),
+            3, target -> target.move(UP, UP, RIGHT, RIGHT));
 
     @Override
     public int makeAMove(List<Move> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
         Location pacLocation = findPacman(mySurroundings);
-        if (pacLocation == null) return 0;
+        if (pacLocation == null) {
+            return 0;
+        }
 
         var myPos = new Location((int) myInfo.getPosition().x, (int) myInfo.getPosition().x);
         var target = TARGET_FUN_MAP.get(myInfo.getID() % 4).apply(pacLocation);

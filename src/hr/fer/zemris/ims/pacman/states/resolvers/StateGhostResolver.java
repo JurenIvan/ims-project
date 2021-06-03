@@ -31,22 +31,25 @@ public class StateGhostResolver {
         this.frightenedStartTime = now();
     }
 
+//    public State resolve(int id) {
+//        if (!stateMap.containsKey(id)) {
+//            stateMap.put(id, scatterState);
+//        }
+//
+//        if (frightenedStartTime.until(now(), SECONDS) < FRIGHTENED_LENGTH) {
+//            stateMap.put(id, frightenedState);
+//            return frightenedState;
+//        }
+//
+//        if (START.until(now(), SECONDS) % TOTAL_CYCLE_TIME > SCATTER_TIME) {
+//            stateMap.put(id, chaseState);
+//            return chaseState;
+//        } else {
+//            stateMap.put(id, scatterState);
+//            return scatterState;
+//        }
+//    }
     public State resolve(int id) {
-        if (!stateMap.containsKey(id)) {
-            stateMap.put(id, scatterState);
-        }
-
-        if (frightenedStartTime.until(now(), SECONDS) < FRIGHTENED_LENGTH) {
-            stateMap.put(id, frightenedState);
-            return frightenedState;
-        }
-
-        if (START.until(now(), SECONDS) % TOTAL_CYCLE_TIME > SCATTER_TIME) {
-            stateMap.put(id, chaseState);
             return chaseState;
-        } else {
-            stateMap.put(id, scatterState);
-            return scatterState;
-        }
     }
 }
