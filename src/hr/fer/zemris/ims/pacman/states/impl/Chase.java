@@ -8,7 +8,6 @@ import mmaracic.gameaiframework.PacmanVisibleWorld;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import static hr.fer.zemris.ims.pacman.domain.Move.*;
 import static java.util.function.Function.identity;
@@ -16,15 +15,20 @@ import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class Chase extends AbstractState {
 
-    private static final Map<Predicate<Integer>, Function<Location, Location>> TARGET_FUN_MAP = Map.of(
-            i -> i % 4 == 0, identity(),
-            i -> i % 4 == 1, location -> location.move(UP, UP, LEFT, LEFT),
-            i -> i % 4 == 2, location -> location.move(LEFT, LEFT),
-            i -> i % 4 == 3, location -> location.move(RIGHT, RIGHT));
+    private static final Map<Integer, Function<Location, Location>> TARGET_FUN_MAP = Map.of(
+            0, identity(),
+            1, location -> location.move(UP, UP, LEFT, LEFT),
+            2, location -> location.move(LEFT, DOWN, DOWN),
+            3, location -> location.move(UP, UP, RIGHT, RIGHT));
 
     @Override
     public int makeAMove(List<Move> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
         Location pacLocation = findPacman(mySurroundings);
-        return 0;
+        if (pacLocation == null) return 0;
+
+        var myPos = new Location((int) myInfo.getPosition().x, (int) myInfo.getPosition().x);
+        var target = TARGET_FUN_MAP.get(myInfo.getID() % 4).apply(pacLocation);
+
+        return findClosest(moves, target, myPos);
     }
 }
