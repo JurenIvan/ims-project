@@ -4,6 +4,7 @@ import hr.fer.zemris.ims.pacman.domain.Move;
 import mmaracic.gameaiframework.AgentAI;
 import mmaracic.gameaiframework.PacmanAgent;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
+import mmaracic.gameaiframework.WorldEntity;
 
 import java.util.*;
 
@@ -121,5 +122,11 @@ public class PacmanAI extends AgentAI {
         }
         Move move = random(niceMoves);
         return prepareReturn(myInfo, move, moves, "Random", history);
+    }
+
+    public int prepareReturn(WorldEntity.WorldEntityInfo myInfo, Move theMove, ArrayList<int[]> moves, String message, Map<Integer, List<Move>> history) {
+        printStatus("ID:" + myInfo.getID() + " " + message + " " + theMove);
+        history.get(myInfo.getID()).add(theMove);
+        return findIndex(moves, theMove);
     }
 }
