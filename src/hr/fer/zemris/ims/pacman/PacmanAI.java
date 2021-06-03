@@ -85,8 +85,10 @@ public class PacmanAI extends AgentAI {
         int radiusY = mySurroundings.getDimensionY() / 2;
 
         boolean powerUP = myInfo.hasProperty(PacmanAgent.powerupPropertyName);
+        powerUpStatus.setEnabled(powerUP);
+
         Vector3f pos = myInfo.getPosition();
-        printStatus("Location x: "+pos.x+" y: "+pos.y);
+        printStatus("Location x: " + pos.x + " y: " + pos.y);
 
         float ghostDistance = Float.MAX_VALUE;
         Location ghostLocation = null;

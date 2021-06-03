@@ -24,6 +24,17 @@ public enum Move {
         return RIGHT;
     }
 
+    public Move opposite() {
+        if (this == UP) return DOWN;
+        if (this == DOWN) return UP;
+        if (this == LEFT) return RIGHT;
+        return LEFT;
+    }
+
+    public int[] toArray(){
+        return new int[]{x, y};
+    }
+
     public static Move from(int[] move) {
         return from(move[0], move[1]);
     }

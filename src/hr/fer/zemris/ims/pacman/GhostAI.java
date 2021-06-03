@@ -12,6 +12,9 @@ import static java.util.stream.Collectors.toList;
 
 public class GhostAI extends AgentAI {
 
+    private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
+    private static final Map<Integer, List<Move>> history = new HashMap<>();
+
     private int findClosest(List<Move> moves, Location location) {
         int index = 0;
         Move move = moves.get(0);
