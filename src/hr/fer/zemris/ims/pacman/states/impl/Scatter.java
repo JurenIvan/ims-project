@@ -17,13 +17,23 @@ public class Scatter extends AbstractState {
         if (moves.size() == 1) return 0;
 
         int mapCorner = myInfo.getID() % 4;
+        int targetX, targetY;
+
         if (mapCorner == 0) {
-            int targetX = -mySurroundings.getDimensionX() / 2;
-            int targetY = mySurroundings.getDimensionY() / 2;
-
-            Vector3f myPosition = myInfo.getPosition();
-            AbstractState.findClosest(moves, new Location(targetX, targetY), new Location((int) myPosition.x, (int) myPosition.y));
-
+            targetX = -mySurroundings.getDimensionX() / 2;
+            targetY = mySurroundings.getDimensionY() / 2;
+        } else if (mapCorner == 1) {
+            targetX = mySurroundings.getDimensionX() / 2;
+            targetY = mySurroundings.getDimensionY() / 2;
+        } else if (mapCorner == 2) {
+            targetX = -mySurroundings.getDimensionX() / 2;
+            targetY = -mySurroundings.getDimensionY() / 2;
+        } else {
+            targetX = mySurroundings.getDimensionX() / 2;
+            targetY = -mySurroundings.getDimensionY() / 2;
         }
+
+        Vector3f myPosition = myInfo.getPosition();
+        return findClosest(moves, new Location(targetX, targetY), new Location((int) myPosition.x, (int) myPosition.y));
     }
 }
