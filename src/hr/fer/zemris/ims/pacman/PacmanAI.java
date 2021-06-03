@@ -1,9 +1,6 @@
 package hr.fer.zemris.ims.pacman;
 
 import com.jme3.math.Vector3f;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import mmaracic.gameaiframework.AgentAI;
 import mmaracic.gameaiframework.PacmanAgent;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
@@ -14,35 +11,90 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Random;
 
-import static java.lang.Math.sqrt;
-
 public class PacmanAI extends AgentAI {
+
+    private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
+
+    protected static class Location implements Comparable<Location> {
+        int x = 0, y = 0;
+
+        Location(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        int getX() {
+            return x;
+        }
+
+        int getY() {
+            return y;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof Location) {
+                Location temp = (Location) o;
+                if ((temp.x == this.x) && (temp.y == this.y))
+                    return true;
+                else
+                    return false;
+            } else
+                return false;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+            hash = 79 * hash + this.x;
+            hash = 79 * hash + this.y;
+            return hash;
+        }
+
+        public float distanceTo(Location other) {
+            int distanceX = other.x - x;
+            int distanceY = other.y - y;
+
+            return (float) Math.abs(distanceX) + Math.abs(distanceY);
+//            return (float) Math.sqrt(distanceX*distanceX + distanceY+distanceY);
+        }
+
+        @Override
+        public int compareTo(Location o) {
+            if (x == o.x) {
+                return Integer.compare(y, o.y);
+            } else {
+                return Integer.compare(x, o.x);
+            }
+        }
+    }
 
     private HashSet<Location> points = new HashSet<>();
     private Location myLocation = new Location(0, 0);
+
     private Date now = new Date();
     private Random r = new Random(now.getTime());
+
     private Location targetLocation = myLocation;
     private float targetDistance = Float.MAX_VALUE;
     private int targetDuration = 0;
 
     @Override
-    public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings,
-                          WorldEntity.WorldEntityInfo myInfo) {
+    public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntity.WorldEntityInfo myInfo) {
         int radiusX = mySurroundings.getDimensionX() / 2;
         int radiusY = mySurroundings.getDimensionY() / 2;
 
         boolean powerUP = myInfo.hasProperty(PacmanAgent.powerupPropertyName);
+        powerUpStatus.setEnabled(powerUP);
+
         Vector3f pos = myInfo.getPosition();
-//        printStatus("Location x: "+pos.x+" y: "+pos.y);
+        printStatus("Location x: " + pos.x + " y: " + pos.y);
 
         float ghostDistance = Float.MAX_VALUE;
         Location ghostLocation = null;
         for (int i = -radiusX; i <= radiusX; i++) {
             for (int j = -radiusY; j <= radiusY; j++) {
-                if (i == 0 && j == 0) {
-                    continue;
-                }
+                if (i == 0 && j == 0) continue;
                 Location tempLocation = new Location(myLocation.getX() + i, myLocation.getY() + j);
                 ArrayList<WorldEntity.WorldEntityInfo> neighPosInfos = mySurroundings.getWorldInfoAt(i, j);
                 if (neighPosInfos != null) {
@@ -99,12 +151,9 @@ public class PacmanAI extends AgentAI {
 
         for (int i = moves.size() - 1; i >= 0; i--) {
             int[] move = moves.get(i);
-            Location moveLocation = new Location(myLocation.getX() + move[0],
-                    myLocation.getY() + move[1]);
+            Location moveLocation = new Location(myLocation.getX() + move[0], myLocation.getY() + move[1]);
             float newPDistance = moveLocation.distanceTo(targetLocation);
-            float newGDistance =
-                    (ghostDistance < Float.MAX_VALUE) ? moveLocation.distanceTo(ghostLocation)
-                            : Float.MAX_VALUE;
+            float newGDistance = (ghostDistance < Float.MAX_VALUE) ? moveLocation.distanceTo(ghostLocation) : Float.MAX_VALUE;
             if (newPDistance <= currMinPDistance && newGDistance > 1) {
                 //that way
                 currMinPDistance = newPDistance;
