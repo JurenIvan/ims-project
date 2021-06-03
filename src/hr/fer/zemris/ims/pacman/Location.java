@@ -4,6 +4,7 @@ import hr.fer.zemris.ims.pacman.domain.Move;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 import static java.lang.Math.sqrt;
 import static java.util.Arrays.stream;
@@ -11,6 +12,7 @@ import static java.util.Arrays.stream;
 @Getter
 @EqualsAndHashCode
 @AllArgsConstructor
+@ToString
 public class Location {
 
     private final int x;

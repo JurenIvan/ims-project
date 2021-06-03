@@ -2,8 +2,10 @@ package hr.fer.zemris.ims.pacman.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
+@ToString
 @AllArgsConstructor
 public enum Move {
 

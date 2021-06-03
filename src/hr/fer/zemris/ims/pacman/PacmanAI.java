@@ -12,6 +12,9 @@ import java.util.HashSet;
 import java.util.Random;
 
 public class PacmanAI extends AgentAI {
+
+    private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
+
     protected static class Location implements Comparable<Location> {
         int x = 0, y = 0;
 
