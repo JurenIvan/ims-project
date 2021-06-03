@@ -21,6 +21,7 @@ public class PacmanAI extends AgentAI {
     private Location myLocation = new Location(0, 0);
     private Location targetLocation = myLocation;
     private int targetDuration = 0;
+    private boolean targetPowerUp;
 
     @Override
     public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntity.WorldEntityInfo myInfo) {

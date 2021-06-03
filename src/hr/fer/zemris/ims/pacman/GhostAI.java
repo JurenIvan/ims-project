@@ -62,7 +62,7 @@ public class GhostAI extends AgentAI {
         }
 
         //nema pacmana
-        removeLastFromHistory(niceMoves, myInfo);
+        removeLastFromHistory(niceMoves, myInfo, history);
         if (niceMoves.size() == 1) {
             return prepareReturn(myInfo, niceMoves.get(0), moves, "Default non back!");
         }
