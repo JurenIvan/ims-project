@@ -90,7 +90,7 @@ public class GhostAI extends AgentAI {
     }
 
     private int prepareReturn(WorldEntityInfo myInfo, Move theMove, ArrayList<int[]> moves, String message) {
-        printStatus("ID:" + myInfo.getID() + " " + message + " " + theMove);
+        // printStatus("ID:" + myInfo.getID() + " " + message + " " + theMove);
         history.get(myInfo.getID()).add(theMove);
         return findIndex(moves, theMove);
     }

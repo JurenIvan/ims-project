@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
+import static java.lang.Integer.compare;
 import static java.lang.Math.sqrt;
 import static java.util.Arrays.stream;
 
@@ -13,7 +14,7 @@ import static java.util.Arrays.stream;
 @EqualsAndHashCode
 @AllArgsConstructor
 @ToString
-public class Location {
+public class Location implements Comparable<Location> {
 
     private final int x;
     private final int y;
@@ -31,5 +32,10 @@ public class Location {
 
     public Location move(Move... moves) {
         return new Location(x + stream(moves).mapToInt(Move::getX).sum(), y + stream(moves).mapToInt(Move::getY).sum());
+    }
+
+    @Override
+    public int compareTo(Location o) {
+        return x == o.x ? compare(y, o.y) : compare(x, o.x);
     }
 }
