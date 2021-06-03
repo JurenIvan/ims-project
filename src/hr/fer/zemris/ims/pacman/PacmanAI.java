@@ -41,7 +41,7 @@ public class PacmanAI extends AgentAI {
             return prepareReturn(myInfo, niceMoves.get(0), moves, "Default!", history);
         }
 
-        for (int i = -mySurroundings.getDimensionX() / 2; i <= mySurroundings.getDimensionX(); i++) {
+        for (int i = -mySurroundings.getDimensionX() / 2; i <= mySurroundings.getDimensionX() / 2; i++) {
             for (int j = -mySurroundings.getDimensionY() / 2; j <= mySurroundings.getDimensionY() / 2; j++) {
                 if (i == 0 && j == 0) continue;
                 Location tempLocation = new Location(i, j);
