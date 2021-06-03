@@ -5,9 +5,12 @@ import mmaracic.gameaiframework.AgentAI;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
 import mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static java.util.stream.Collectors.joining;
+import static hr.fer.zemris.ims.pacman.domain.Move.LEFT;
 import static java.util.stream.Collectors.toList;
 
 public class GhostAI extends AgentAI {
@@ -32,71 +35,76 @@ public class GhostAI extends AgentAI {
 
     @Override
     public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
-        if (!history.containsKey(myInfo.getID())) {
-            List<Move> list = new ArrayList<>();
-            list.add(Move.LEFT);
-            history.put(myInfo.getID(), list);
-        }
-
-        if (moves.size() == 1) {
-            printStatus("default return 0");
-            return 0;
-        }
+        initializeHistoryMap(myInfo);
         List<Move> niceMoves = moves.stream().map(Move::from).collect(toList());
+
+        if (niceMoves.size() == 1) {
+            return prepareReturn(myInfo, niceMoves.get(0), moves, "Default!");
+        }
 
         var pacmanMoveIndex = findPacman(niceMoves, mySurroundings, myInfo);
         if (pacmanMoveIndex != -1) {    // naden pacman
             if (powerUpStatus.isPowerUpEnabled()) {
-                var oppositeMove = niceMoves.get(pacmanMoveIndex).opposite();
+                var towardPacman = niceMoves.get(pacmanMoveIndex);
+                var oppositeMove = towardPacman.opposite();
                 if (niceMoves.contains(oppositeMove)) {
-                    history.get(myInfo.getID()).add(oppositeMove);
-                    printStatus("55 " + oppositeMove);
-                    return niceMoves.indexOf(oppositeMove);
-                } else {
-                    //dont go back on prev location
-                    var list = history.get(myInfo.getID());
-                    niceMoves.remove(list.get(list.size() - 1));
-                    var pickedMove = niceMoves.get((int) (Math.random() * niceMoves.size()));
-                    history.get(myInfo.getID()).add(pickedMove);
-                    printStatus("63 " + pickedMove);
-
-                    return moves.indexOf(pickedMove.toArray());
+                    return prepareReturn(myInfo, oppositeMove, moves, "Run, opposite!");
                 }
+                niceMoves.remove(towardPacman);
+                var picked = random(niceMoves);   //add random
+                return prepareReturn(myInfo, picked, moves, "Run, wherever!");
             }
-        } else {
-            //nadi duhove
-            int ghostMoveIndex = findGhost(niceMoves, mySurroundings, myInfo);
-            if (ghostMoveIndex != -1) {    //vidis ghosta
-                if (powerUpStatus.isPowerUpEnabled()) { //ako ima powerup odi u smjeru duha
-                    Move bestMove = niceMoves.get(ghostMoveIndex);
-                    history.get(myInfo.getID()).add(bestMove);
-                    printStatus("75 "+ bestMove);
-                    return ghostMoveIndex;
-                } else {
-                    Move oppositeMove = niceMoves.get(ghostMoveIndex).opposite(); //ako nema powerup odi u suprotnom duha
-                    if (niceMoves.contains(oppositeMove)) {
-                        history.get(myInfo.getID()).add(oppositeMove);
-                        printStatus("81 " + oppositeMove);
-                        return niceMoves.indexOf(oppositeMove);
-                    }//else fallthrough
-                }
-            }
+            var towardPacman = niceMoves.get(pacmanMoveIndex);
+            return prepareReturn(myInfo, towardPacman, moves, "Chase!");
         }
-        // ne vidis ghosta
-        //dont go back on prev location
+
+        //nema pacmana
+        removeLastFromHistory(niceMoves, myInfo);
+        if (niceMoves.size() == 1) {
+            return prepareReturn(myInfo, niceMoves.get(0), moves, "Default non back!");
+        }
+
+        int ghostMoveIndex = findGhost(niceMoves, mySurroundings, myInfo);
+        if (ghostMoveIndex != -1) {    //vidis ghosta
+            Move towardGhost = niceMoves.get(ghostMoveIndex);
+            Move oppositeMove = towardGhost.opposite();
+            if (niceMoves.contains(oppositeMove)) {
+                return prepareReturn(myInfo, oppositeMove, moves, "Opposite to ghost!");
+            }
+            niceMoves.remove(towardGhost);
+            var chosen = random(niceMoves);
+            return prepareReturn(myInfo, chosen, moves, "Ghost anything!");
+        }
+
+        var pickedMove = random(niceMoves);      //add random
+        return prepareReturn(myInfo, pickedMove, moves, "Last default!");
+    }
+
+    private int prepareReturn(WorldEntityInfo myInfo, Move theMove, ArrayList<int[]> moves, String message) {
+        printStatus("ID:" + myInfo.getID() + " " + message + " " + theMove);
+        history.get(myInfo.getID()).add(theMove);
+        return findIndex(moves, theMove);
+    }
+
+    private Move random(List<Move> niceMoves) {
+        return niceMoves.get((int) (Math.random() * 1007) % niceMoves.size());
+    }
+
+    private void removeLastFromHistory(List<Move> niceMoves, WorldEntityInfo myInfo) {
         var list = history.get(myInfo.getID());
-        niceMoves.remove(list.get(list.size() - 1));
-        var pickedMove = niceMoves.get((int) (Math.random() * niceMoves.size()));
-        history.get(myInfo.getID()).add(pickedMove);
-        printStatus("laast " + moves.indexOf(pickedMove.toArray()) + " " + pickedMove + " " + moves.stream().map(Arrays::toString).collect(joining(" ")));
+//        printStatus("before" + niceMoves.size());
+        niceMoves.remove(list.get(list.size() - 1).opposite());
+//        printStatus("after" + niceMoves.size());
+    }
 
-        for (int i = 0; i < moves.size(); i++) {
-            int[] m = moves.get(i);
-            if (m[0] == pickedMove.getX() && m[1] == pickedMove.getY()) {
-                return i;
-            }
+    private void initializeHistoryMap(WorldEntityInfo myInfo) {
+        if (!history.containsKey(myInfo.getID())) {
+            List<Move> list = new ArrayList<>();
+            list.add(LEFT);
+            list.add(LEFT);
+            list.add(LEFT);
+            history.put(myInfo.getID(), list);
         }
-        return 0;
     }
 
     private int findPacman(List<Move> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
@@ -123,7 +131,7 @@ public class GhostAI extends AgentAI {
                     if (!metaHash.isEmpty()) {
                         for (Integer id : metaHash.keySet()) {
                             if (id != myInfo.getID()) {
-                                move = Move.from((int[]) metaHash.remove(id));
+                                move = (Move) metaHash.remove(id);
                                 //printStatus(myInfo.getID()+": Found pacman trail left by ghost: "+id+"!");
                             }
                         }
@@ -162,6 +170,16 @@ public class GhostAI extends AgentAI {
 
             }
 
+        }
+        return -1;
+    }
+
+    private int findIndex(ArrayList<int[]> moves, Move pickedMove) {
+        for (int i = 0; i < moves.size(); i++) {
+            int[] m = moves.get(i);
+            if (m[0] == pickedMove.getX() && m[1] == pickedMove.getY()) {
+                return i;
+            }
         }
         return -1;
     }
