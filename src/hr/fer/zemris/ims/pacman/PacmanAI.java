@@ -36,7 +36,6 @@ public class PacmanAI extends AgentAI {
         ghosts.clear();
 
         myLocation = new Location((int) myInfo.getPosition().getX(), (int) myInfo.getPosition().getY());
-        printStatus("Location x: " + myLocation);
 
         if (niceMoves.size() == 1) {
             return prepareReturn(myInfo, niceMoves.get(0), moves, "Default!", history);
@@ -49,11 +48,14 @@ public class PacmanAI extends AgentAI {
                 List<WorldEntityInfo> neighPosInfos = mySurroundings.getWorldInfoAt(i, j);
                 if (neighPosInfos != null) {
                     for (WorldEntityInfo info : neighPosInfos) {
-                        if (info.getIdentifier().compareToIgnoreCase("Point") == 0) {
+                        points.remove(myLocation.add(tempLocation));
+                        powerUps.remove(myLocation.add(tempLocation));
+
+                        if (info.getIdentifier().compareToIgnoreCase("Point") == 0)
                             points.add(myLocation.add(tempLocation));
-                        } else if (info.getIdentifier().compareToIgnoreCase("Powerup") == 0) {
+                        if (info.getIdentifier().compareToIgnoreCase("Powerup") == 0)
                             powerUps.add(myLocation.add(tempLocation));
-                        } else if (info.getIdentifier().compareToIgnoreCase("Ghost") == 0) {
+                        if (info.getIdentifier().compareToIgnoreCase("Ghost") == 0) {
                             ghosts.add(myLocation.add(tempLocation));
                         }
                     }
@@ -76,10 +78,17 @@ public class PacmanAI extends AgentAI {
                 if (!targetPowerUp) {
                     targetDuration = 0;
                     targetPowerUp = true;
-                    Location powerUpTarget = powerUps.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
-                    int powerUpIndex = findClosest(niceMoves, powerUpTarget);
+                    targetLocation = powerUps.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
+                    int powerUpIndex = findClosest(niceMoves, targetLocation);
                     return prepareReturn(myInfo, niceMoves.get(powerUpIndex), moves, "Chase powerUp", history);
                 }
+
+
+//                targetLocation = powerUps.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
+//                int powerUpIndex = findClosest(niceMoves, targetLocation);
+//                return prepareReturn(myInfo, niceMoves.get(powerUpIndex), moves, "Chase powerUp", history);
+
+
                 return eat(true, moves, niceMoves, mySurroundings, myInfo);
             }
         }
@@ -121,7 +130,7 @@ public class PacmanAI extends AgentAI {
             }
         }
         Move move = random(niceMoves);
-        return prepareReturn(myInfo, move, moves, "Random", history);
+        return prepareReturn(myInfo, move, moves, "Random " + chased, history);
     }
 
     public int prepareReturn(WorldEntity.WorldEntityInfo myInfo, Move theMove, ArrayList<int[]> moves, String message, Map<Integer, List<Move>> history) {
