@@ -23,12 +23,14 @@ public class PacmanAI extends AgentAI {
     private final HashSet<Location> ghosts = new HashSet<>();
     private final Random r = new Random();
     private Location myLocation = new Location(0, 0);
-    private Location targetLocation = myLocation;
+    private Location targetLocation = null;
     private int targetDuration = 0;
     private boolean targetPowerUp;
 
     @Override
     public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+        printStatus("STEPPPPPPP");
+
         targetDuration++;
         initializeHistoryMap(myInfo, history);
         List<Move> niceMoves = moves.stream().map(Move::from).collect(toList());
@@ -36,7 +38,7 @@ public class PacmanAI extends AgentAI {
         ghosts.clear();
 
         myLocation = new Location((int) myInfo.getPosition().getX(), (int) myInfo.getPosition().getY());
-
+        printStatus("MY LOCATION" + myLocation);
         if (niceMoves.size() == 1) {
             return prepareReturn(myInfo, niceMoves.get(0), moves, "Default!", history);
         }
@@ -83,9 +85,9 @@ public class PacmanAI extends AgentAI {
                     int powerUpIndex = findClosest(niceMoves, targetLocation.sub(myLocation));
                     return prepareReturn(myInfo, niceMoves.get(powerUpIndex), moves, "Chase powerUp", history);
                 }
-
                 return eat(true, moves, niceMoves, mySurroundings, myInfo);
             }
+            return eat(true, moves, niceMoves, mySurroundings, myInfo);
         }
 
 
@@ -93,13 +95,27 @@ public class PacmanAI extends AgentAI {
     }
 
     private int eat(boolean chased, ArrayList<int[]> moves, List<Move> niceMoves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
-        if ((!chased && targetPowerUp) || myLocation.equals(targetLocation)) {
-            Location target = points.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
-            int index = findClosest(niceMoves, target.sub(myLocation));
-            targetLocation = target;
-            targetDuration = 0;
+        if ((!chased && targetPowerUp) || targetLocation == null || myLocation.equals(targetLocation)) {
+            points.remove(myLocation);
+            powerUps.remove(myLocation);
+//            printStatus((!chased && targetPowerUp) + " " + (targetLocation == null) + " " + myLocation.equals(targetLocation));
+            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+            if (target.isPresent()) {
+//                printStatus("CLOSEST" + target.get());
+                int index = findClosest(niceMoves, target.get().sub(myLocation));
+                targetLocation = target.get();
+                targetDuration = 0;
+                targetPowerUp = false;
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
+            }
+            targetLocation = null;
             targetPowerUp = false;
-            return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
+            targetDuration = 0;
+            if (niceMoves.size() > 1) {
+                removeLastFromHistory(niceMoves, myInfo, history);
+            }
+            Move move = random(niceMoves);
+            return prepareReturn(myInfo, move, moves, "Random " + chased, history);
         }
 
         if (targetDuration >= TARGET_DURATION_TIMEOUT) {
@@ -118,17 +134,20 @@ public class PacmanAI extends AgentAI {
             }
             return findAnotherPoint(niceMoves, moves, myInfo, "Gonna eat cookie :D");
         }
+        //is something better
+        Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
 
-        // chased == true -> ganjaj powerup
-        // return
+        if (target.isPresent() && !targetLocation.equals(target.get())) {
+            targetLocation = target.get();
+            targetDuration = 0;
+            targetPowerUp = false;
+            var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+            return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan!" + targetLocation, history);
+        }
 
 
-        // cha
-
-
-
-        Move move = random(niceMoves);
-        return prepareReturn(myInfo, move, moves, "Random " + chased, history);
+        var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+        return prepareReturn(myInfo, niceMoves.get(index), moves, "Execute the master plan! Target: " + targetLocation, history);
     }
 
     public int prepareReturn(WorldEntity.WorldEntityInfo myInfo, Move theMove, ArrayList<int[]> moves, String message, Map<Integer, List<Move>> history) {

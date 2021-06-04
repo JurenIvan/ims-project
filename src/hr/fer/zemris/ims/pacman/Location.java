@@ -23,7 +23,7 @@ public class Location implements Comparable<Location> {
         int distanceX = other.getX() - x;
         int distanceY = other.getY() - y;
 
-        return sqrt(distanceX * distanceX + distanceY + distanceY);
+        return sqrt(distanceX * distanceX + distanceY * distanceY);
     }
 
     public Location move(Move move) {
