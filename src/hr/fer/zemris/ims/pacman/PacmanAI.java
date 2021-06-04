@@ -7,9 +7,11 @@ import mmaracic.gameaiframework.PacmanVisibleWorld;
 import mmaracic.gameaiframework.WorldEntity;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hr.fer.zemris.ims.pacman.AIUtils.*;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.*;
 import static java.util.stream.Collectors.toList;
 import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
@@ -65,11 +67,12 @@ public class PacmanAI extends AgentAI {
 
         if (!ghosts.isEmpty()) {
             Location ghostTarget = ghosts.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
-            int ghostIndex = findClosest(niceMoves, ghostTarget);
+            int ghostIndex = findClosest(niceMoves, ghostTarget.sub(myLocation));
             if (powerUpStatus.isPowerUpEnabled()) {
                 return prepareReturn(myInfo, niceMoves.get(ghostIndex), moves, "Chase", history);
             }
-            niceMoves.remove(ghostIndex);
+            niceMoves.remove(niceMoves.get(ghostIndex));
+
             if (niceMoves.size() == 1) {
                 return prepareReturn(myInfo, niceMoves.get(0), moves, "Run no option", history);
             }
@@ -79,15 +82,9 @@ public class PacmanAI extends AgentAI {
                     targetDuration = 0;
                     targetPowerUp = true;
                     targetLocation = powerUps.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
-                    int powerUpIndex = findClosest(niceMoves, targetLocation);
+                    int powerUpIndex = findClosest(niceMoves, targetLocation.sub(myLocation));
                     return prepareReturn(myInfo, niceMoves.get(powerUpIndex), moves, "Chase powerUp", history);
                 }
-
-
-//                targetLocation = powerUps.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
-//                int powerUpIndex = findClosest(niceMoves, targetLocation);
-//                return prepareReturn(myInfo, niceMoves.get(powerUpIndex), moves, "Chase powerUp", history);
-
 
                 return eat(true, moves, niceMoves, mySurroundings, myInfo);
             }
@@ -98,6 +95,7 @@ public class PacmanAI extends AgentAI {
     }
 
     private int eat(boolean chased, ArrayList<int[]> moves, List<Move> niceMoves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+
         if ((!chased && targetPowerUp) || myLocation.equals(targetLocation)) {
             Location target = points.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
             int index = findClosest(niceMoves, target);

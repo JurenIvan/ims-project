@@ -38,6 +38,10 @@ public class Location implements Comparable<Location> {
         return new Location(x + location.getX(), y + location.getY());
     }
 
+    public Location sub(Location location) {
+        return new Location(x - location.getX(), y - location.getY());
+    }
+
     @Override
     public int compareTo(Location o) {
         return x == o.x ? compare(y, o.y) : compare(x, o.x);

@@ -12,10 +12,10 @@ public class AIUtils {
     public static int findClosest(List<Move> moves, Location location) {
         int index = 0;
         Move move = moves.get(0);
-        double dist = Math.sqrt((location.getX() - move.getX()) * (location.getX() - move.getX()) + (location.getY() - move.getY()) * (location.getY() - move.getY()));
+        double dist = (location.getX() - move.getX()) * (location.getX() - move.getX()) + (location.getY() - move.getY()) * (location.getY() - move.getY());
         for (int i = 1; i < moves.size(); i++) {
             move = moves.get(i);
-            double currDist = Math.sqrt((location.getX() - move.getX()) * (location.getX() - move.getX()) + (location.getY() - move.getY()) * (location.getY() - move.getY()));
+            double currDist = (location.getX() - move.getX()) * (location.getX() - move.getX()) + (location.getY() - move.getY()) * (location.getY() - move.getY());
             if (currDist < dist) {
                 dist = currDist;
                 index = i;
