@@ -10,7 +10,6 @@ import java.util.*;
 
 import static hr.fer.zemris.ims.pacman.AIUtils.*;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
@@ -144,7 +143,7 @@ public class PacmanAI extends AgentAI {
         }
 
         //is something better
-        if(!targetPowerUp) {
+        if (!targetPowerUp) {
             Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
             if (target.isPresent() && !targetLocation.equals(target.get())) {
                 targetLocation = target.get();
@@ -154,7 +153,7 @@ public class PacmanAI extends AgentAI {
                 return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan cookie!" + targetLocation, history);
             }
         }
-        if(targetPowerUp){
+        if (targetPowerUp) {
             Optional<Location> target = powerUps.stream().min(comparing(myLocation::distanceTo));
             if (target.isPresent() && !targetLocation.equals(target.get())) {
                 targetLocation = target.get();
@@ -177,7 +176,7 @@ public class PacmanAI extends AgentAI {
 
     private int findAnotherPoint(List<Move> niceMoves, ArrayList<int[]> moves, WorldEntityInfo myInfo, String message) {
         Optional<Location> target = points.stream()
-                .filter(e->!targetLocation.equals(e))
+                .filter(e -> !targetLocation.equals(e))
                 .min(comparing(myLocation::distanceTo));
         if (target.isPresent()) {
             targetLocation = target.get();
