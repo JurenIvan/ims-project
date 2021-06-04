@@ -111,36 +111,12 @@ public class PacmanAI extends AgentAI {
                     targetLocation = target.get();
                     targetDuration = 0;
                     targetPowerUp = true;
-                    var index = findClosest(niceMoves, targetLocation);
+                    var index = findClosest(niceMoves, targetLocation.sub(myLocation));
                     return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest powerUp", history);
                 }
-                // Stela job 1
-                target = points.stream().min(comparing(myLocation::distanceTo));
-                if (target.isPresent()) {
-                    targetLocation = target.get();
-                    targetDuration = 0;
-                    targetPowerUp = false;
-                    var index = findClosest(niceMoves, targetLocation);
-                    return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
-                }
-
-                Move move = random(niceMoves);
-                return prepareReturn(myInfo, move, moves, "Random chased ", history);
-                // Stela job 1
+                return findAnotherPoint(niceMoves, moves, myInfo, "Chased but no powerup, gonna eat cookie :(");
             }
-            // Stela job 2
-            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
-            if (target.isPresent()) {
-                targetLocation = target.get();
-                targetDuration = 0;
-                targetPowerUp = false;
-                var index = findClosest(niceMoves, targetLocation);
-                return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
-            }
-
-            Move move = random(niceMoves);
-            return prepareReturn(myInfo, move, moves, "Random chased ", history);
-            // Stela job 2
+            return findAnotherPoint(niceMoves, moves, myInfo, "Gonna eat cookie :D");
         }
 
         // chased == true -> ganjaj powerup
@@ -159,5 +135,25 @@ public class PacmanAI extends AgentAI {
         printStatus("ID:" + myInfo.getID() + " " + message + " " + theMove);
         history.get(myInfo.getID()).add(theMove);
         return findIndex(moves, theMove);
+    }
+
+    private int findAnotherPoint(List<Move> niceMoves, ArrayList<int[]> moves, WorldEntityInfo myInfo, String message) {
+        Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+        if (target.isPresent()) {
+            targetLocation = target.get();
+            targetDuration = 0;
+            targetPowerUp = false;
+            var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+            return prepareReturn(myInfo, niceMoves.get(index), moves, message, history);
+        }
+
+        targetLocation = null;
+        targetDuration = 0;
+        targetPowerUp = false;
+        if (niceMoves.size() > 1) {
+            removeLastFromHistory(niceMoves, myInfo, history);
+        }
+        Move move = random(niceMoves);
+        return prepareReturn(myInfo, move, moves, "Random chased ", history);
     }
 }
