@@ -10,12 +10,13 @@ import java.util.*;
 
 import static hr.fer.zemris.ims.pacman.AIUtils.*;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class PacmanAI extends AgentAI {
 
-    public static final int TARGET_DURATION_TIMEOUT = 10;
+    public static final int TARGET_DURATION_TIMEOUT = 5;
     private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
     private static final Map<Integer, List<Move>> history = new HashMap<>();
     private final HashSet<Location> points = new HashSet<>();
@@ -64,9 +65,12 @@ public class PacmanAI extends AgentAI {
                 }
             }
         }
+        points.remove(myLocation);
+        powerUps.remove(myLocation);
 
         if (!ghosts.isEmpty()) {
             Location ghostTarget = ghosts.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
+
             int ghostIndex = findClosest(niceMoves, ghostTarget.sub(myLocation));
             if (powerUpStatus.isPowerUpEnabled()) {
                 return prepareReturn(myInfo, niceMoves.get(ghostIndex), moves, "Chase", history);
@@ -89,15 +93,19 @@ public class PacmanAI extends AgentAI {
             }
             return eat(true, moves, niceMoves, mySurroundings, myInfo);
         }
-
-
         return eat(false, moves, niceMoves, mySurroundings, myInfo);
     }
 
     private int eat(boolean chased, ArrayList<int[]> moves, List<Move> niceMoves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+        if (!chased) {
+            niceMoves = niceMoves.stream().filter(e -> !powerUps.contains(myLocation.move(e))).collect(toList());
+
+            if (niceMoves.size() == 1) {
+                return prepareReturn(myInfo, niceMoves.get(0), moves, "DO NOT EAT SUPER-COOKIE!", history);
+            }
+        }
+
         if ((!chased && targetPowerUp) || targetLocation == null || myLocation.equals(targetLocation)) {
-            points.remove(myLocation);
-            powerUps.remove(myLocation);
 //            printStatus((!chased && targetPowerUp) + " " + (targetLocation == null) + " " + myLocation.equals(targetLocation));
             Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
             if (target.isPresent()) {
@@ -134,17 +142,28 @@ public class PacmanAI extends AgentAI {
             }
             return findAnotherPoint(niceMoves, moves, myInfo, "Gonna eat cookie :D");
         }
+
         //is something better
-        Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
-
-        if (target.isPresent() && !targetLocation.equals(target.get())) {
-            targetLocation = target.get();
-            targetDuration = 0;
-            targetPowerUp = false;
-            var index = findClosest(niceMoves, targetLocation.sub(myLocation));
-            return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan!" + targetLocation, history);
+        if(!targetPowerUp) {
+            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+            if (target.isPresent() && !targetLocation.equals(target.get())) {
+                targetLocation = target.get();
+                targetDuration = 0;
+                targetPowerUp = false;
+                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan cookie!" + targetLocation, history);
+            }
         }
-
+        if(targetPowerUp){
+            Optional<Location> target = powerUps.stream().min(comparing(myLocation::distanceTo));
+            if (target.isPresent() && !targetLocation.equals(target.get())) {
+                targetLocation = target.get();
+                targetDuration = 0;
+                targetPowerUp = false;
+                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan super-cookie!" + targetLocation, history);
+            }
+        }
 
         var index = findClosest(niceMoves, targetLocation.sub(myLocation));
         return prepareReturn(myInfo, niceMoves.get(index), moves, "Execute the master plan! Target: " + targetLocation, history);
@@ -157,7 +176,9 @@ public class PacmanAI extends AgentAI {
     }
 
     private int findAnotherPoint(List<Move> niceMoves, ArrayList<int[]> moves, WorldEntityInfo myInfo, String message) {
-        Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+        Optional<Location> target = points.stream()
+                .filter(e->!targetLocation.equals(e))
+                .min(comparing(myLocation::distanceTo));
         if (target.isPresent()) {
             targetLocation = target.get();
             targetDuration = 0;
