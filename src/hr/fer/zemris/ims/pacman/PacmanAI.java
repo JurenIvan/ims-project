@@ -7,11 +7,9 @@ import mmaracic.gameaiframework.PacmanVisibleWorld;
 import mmaracic.gameaiframework.WorldEntity;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static hr.fer.zemris.ims.pacman.AIUtils.*;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.*;
 import static java.util.stream.Collectors.toList;
 import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
@@ -95,10 +93,9 @@ public class PacmanAI extends AgentAI {
     }
 
     private int eat(boolean chased, ArrayList<int[]> moves, List<Move> niceMoves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
-
         if ((!chased && targetPowerUp) || myLocation.equals(targetLocation)) {
             Location target = points.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
-            int index = findClosest(niceMoves, target);
+            int index = findClosest(niceMoves, target.sub(myLocation));
             targetLocation = target;
             targetDuration = 0;
             targetPowerUp = false;
@@ -117,6 +114,7 @@ public class PacmanAI extends AgentAI {
                     var index = findClosest(niceMoves, targetLocation);
                     return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest powerUp", history);
                 }
+                // Stela job 1
                 target = points.stream().min(comparing(myLocation::distanceTo));
                 if (target.isPresent()) {
                     targetLocation = target.get();
@@ -125,8 +123,34 @@ public class PacmanAI extends AgentAI {
                     var index = findClosest(niceMoves, targetLocation);
                     return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
                 }
+
+                Move move = random(niceMoves);
+                return prepareReturn(myInfo, move, moves, "Random chased ", history);
+                // Stela job 1
             }
+            // Stela job 2
+            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+            if (target.isPresent()) {
+                targetLocation = target.get();
+                targetDuration = 0;
+                targetPowerUp = false;
+                var index = findClosest(niceMoves, targetLocation);
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
+            }
+
+            Move move = random(niceMoves);
+            return prepareReturn(myInfo, move, moves, "Random chased ", history);
+            // Stela job 2
         }
+
+        // chased == true -> ganjaj powerup
+        // return
+
+
+        // cha
+
+
+
         Move move = random(niceMoves);
         return prepareReturn(myInfo, move, moves, "Random " + chased, history);
     }
