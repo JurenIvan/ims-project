@@ -71,7 +71,7 @@ public class PacmanAI extends AgentAI {
             Location ghostTarget = ghosts.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
 
             int ghostIndex = findClosest(niceMoves, ghostTarget.sub(myLocation));
-            if (powerUpStatus.isPowerUpEnabled()) {
+            if (powerUpStatus.isPowerUpEnabled() && Math.random() > 0.5) {
                 return prepareReturn(myInfo, niceMoves.get(ghostIndex), moves, "Chase", history);
             }
             niceMoves.remove(niceMoves.get(ghostIndex));
@@ -96,7 +96,7 @@ public class PacmanAI extends AgentAI {
     }
 
     private int eat(boolean chased, ArrayList<int[]> moves, List<Move> niceMoves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
-        if (!chased) {
+        if (!chased && !points.isEmpty()) {
             niceMoves = niceMoves.stream().filter(e -> !powerUps.contains(myLocation.move(e))).collect(toList());
 
             if (niceMoves.size() == 1) {
@@ -115,6 +115,15 @@ public class PacmanAI extends AgentAI {
                 targetPowerUp = false;
                 return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
             }
+           target = powerUps.stream().min(comparing(myLocation::distanceTo));
+            if (target.isPresent()) {
+//                printStatus("CLOSEST" + target.get());
+                int index = findClosest(niceMoves, target.get().sub(myLocation));
+                targetLocation = target.get();
+                targetDuration = 0;
+                targetPowerUp = false;
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest powerup", history);
+            }
             targetLocation = null;
             targetPowerUp = false;
             targetDuration = 0;
@@ -126,6 +135,9 @@ public class PacmanAI extends AgentAI {
         }
 
         if (targetDuration >= TARGET_DURATION_TIMEOUT) {
+            if(!targetPowerUp){
+                points.remove(targetLocation);  //todo debateable
+            }
             if (chased) {
                 Optional<Location> target = powerUps.stream()
                         .filter(e -> !targetLocation.equals(e))
@@ -143,26 +155,26 @@ public class PacmanAI extends AgentAI {
         }
 
         //is something better
-        if (!targetPowerUp) {
-            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
-            if (target.isPresent() && !targetLocation.equals(target.get())) {
-                targetLocation = target.get();
-                targetDuration = 0;
-                targetPowerUp = false;
-                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
-                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan cookie!" + targetLocation, history);
-            }
-        }
-        if (targetPowerUp) {
-            Optional<Location> target = powerUps.stream().min(comparing(myLocation::distanceTo));
-            if (target.isPresent() && !targetLocation.equals(target.get())) {
-                targetLocation = target.get();
-                targetDuration = 0;
-                targetPowerUp = false;
-                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
-                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan super-cookie!" + targetLocation, history);
-            }
-        }
+//        if (!targetPowerUp) {
+//            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+//            if (target.isPresent() && !targetLocation.equals(target.get())) {
+//                targetLocation = target.get();
+//                targetDuration = 0;
+//                targetPowerUp = false;
+//                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+//                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan cookie!" + targetLocation, history);
+//            }
+//        }
+//        if (targetPowerUp) {
+//            Optional<Location> target = powerUps.stream().min(comparing(myLocation::distanceTo));
+//            if (target.isPresent() && !targetLocation.equals(target.get())) {
+//                targetLocation = target.get();
+//                targetDuration = 0;
+//                targetPowerUp = false;
+//                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+//                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan super-cookie!" + targetLocation, history);
+//            }
+//        }
 
         var index = findClosest(niceMoves, targetLocation.sub(myLocation));
         return prepareReturn(myInfo, niceMoves.get(index), moves, "Execute the master plan! Target: " + targetLocation, history);

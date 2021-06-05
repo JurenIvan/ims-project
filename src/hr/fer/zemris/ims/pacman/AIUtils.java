@@ -16,7 +16,10 @@ public class AIUtils {
         for (int i = 1; i < moves.size(); i++) {
             move = moves.get(i);
             double currDist = (location.getX() - move.getX()) * (location.getX() - move.getX()) + (location.getY() - move.getY()) * (location.getY() - move.getY());
-            if (currDist < dist) {
+            if (Math.abs(currDist - dist) < 0.01 && Math.random() < 0.5) {
+                dist = currDist;
+                index = i;
+            } else if (currDist < dist) {
                 dist = currDist;
                 index = i;
             }
