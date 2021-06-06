@@ -15,11 +15,11 @@ import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class PacmanAI extends AgentAI {
 
-    public static final int TARGET_DURATION_TIMEOUT = 8;
+    public static final int TARGET_DURATION_TIMEOUT = 4;
     private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
     private static final Map<Integer, List<Move>> history = new HashMap<>();
     private final HashSet<Location> points = new HashSet<>();
-    private final HashSet<Location> powerUps = new HashSet<>(List.of(new Location(-8,-8),new Location(-8,8),new Location(8,-8),new Location(8,8)));
+    private final HashSet<Location> powerUps = new HashSet<>(List.of(new Location(-8, -8), new Location(-8, 8), new Location(8, -8), new Location(8, 8)));
     private final HashSet<Location> ghosts = new HashSet<>();
     private final Random r = new Random();
     private Location myLocation = new Location(0, 0);
@@ -72,7 +72,7 @@ public class PacmanAI extends AgentAI {
 
             int ghostIndex = findClosest(niceMoves, ghostTarget.sub(myLocation));
             var closest = niceMoves.get(ghostIndex);
-            if (powerUpStatus.isPowerUpEnabled() && Math.random() > 0.5) {
+            if (powerUpStatus.isPowerUpEnabled() && (Math.random() > 0.5 || myLocation.distanceTo(ghostTarget) < 2)) {
                 return prepareReturn(myInfo, closest, moves, "Chase", history);
             }
             niceMoves.remove(closest);
@@ -81,9 +81,9 @@ public class PacmanAI extends AgentAI {
                 return prepareReturn(myInfo, niceMoves.get(0), moves, "Run no option", history);
             }
 
-            //todo remove 2nd worst if prev bad
-            int ghostIndexNew = findClosest(niceMoves, ghostTarget.sub(myLocation));
-            var closestNew = niceMoves.get(ghostIndexNew);
+            //todo remove 2nd worst if prev same bad
+            ghostIndex = findClosest(niceMoves, ghostTarget.sub(myLocation));
+            var closestNew = niceMoves.get(ghostIndex);
             if (myLocation.move(closest).distanceTo(ghostTarget) == myLocation.move(closestNew).distanceTo(ghostTarget)) {
                 printStatus("new condition");
                 niceMoves.remove(closestNew);
