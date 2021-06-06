@@ -14,6 +14,7 @@ import static java.util.Arrays.stream;
 @EqualsAndHashCode
 @AllArgsConstructor
 @ToString
+
 public class Location implements Comparable<Location> {
 
     private final int x;
@@ -45,5 +46,13 @@ public class Location implements Comparable<Location> {
     @Override
     public int compareTo(Location o) {
         return x == o.x ? compare(y, o.y) : compare(x, o.x);
+    }
+
+    public Location move(Move move) {
+        return new Location(x + move.getX(), y + move.getY());
+    }
+
+    public Location move(Move... moves) {
+        return new Location(x + stream(moves).mapToInt(Move::getX).sum(), y + stream(moves).mapToInt(Move::getY).sum());
     }
 }
