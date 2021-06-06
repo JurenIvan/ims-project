@@ -1,171 +1,210 @@
 package hr.fer.zemris.ims.pacman;
 
-import com.jme3.math.Vector3f;
+import hr.fer.zemris.ims.pacman.domain.Move;
 import mmaracic.gameaiframework.AgentAI;
 import mmaracic.gameaiframework.PacmanAgent;
 import mmaracic.gameaiframework.PacmanVisibleWorld;
 import mmaracic.gameaiframework.WorldEntity;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
+
+import static hr.fer.zemris.ims.pacman.AIUtils.*;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
+import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class PacmanAI extends AgentAI {
 
+    public static final int TARGET_DURATION_TIMEOUT = 5;
     private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
-
-    protected static class Location implements Comparable<Location> {
-        int x = 0, y = 0;
-
-        Location(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        int getX() {
-            return x;
-        }
-
-        int getY() {
-            return y;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o instanceof Location) {
-                Location temp = (Location) o;
-                if ((temp.x == this.x) && (temp.y == this.y))
-                    return true;
-                else
-                    return false;
-            } else
-                return false;
-        }
-
-        @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 79 * hash + this.x;
-            hash = 79 * hash + this.y;
-            return hash;
-        }
-
-        public float distanceTo(Location other) {
-            int distanceX = other.x - x;
-            int distanceY = other.y - y;
-
-            return (float) Math.abs(distanceX) + Math.abs(distanceY);
-//            return (float) Math.sqrt(distanceX*distanceX + distanceY+distanceY);
-        }
-
-        @Override
-        public int compareTo(Location o) {
-            if (x == o.x) {
-                return Integer.compare(y, o.y);
-            } else {
-                return Integer.compare(x, o.x);
-            }
-        }
-    }
-
-    private HashSet<Location> points = new HashSet<>();
+    private static final Map<Integer, List<Move>> history = new HashMap<>();
+    private final HashSet<Location> points = new HashSet<>();
+    private final HashSet<Location> powerUps = new HashSet<>();
+    private final HashSet<Location> ghosts = new HashSet<>();
+    private final Random r = new Random();
     private Location myLocation = new Location(0, 0);
-
-    private Date now = new Date();
-    private Random r = new Random(now.getTime());
-
-    private Location targetLocation = myLocation;
-    private float targetDistance = Float.MAX_VALUE;
+    private Location targetLocation = null;
     private int targetDuration = 0;
+    private boolean targetPowerUp;
 
     @Override
-    public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntity.WorldEntityInfo myInfo) {
-        int radiusX = mySurroundings.getDimensionX() / 2;
-        int radiusY = mySurroundings.getDimensionY() / 2;
+    public int decideMove(ArrayList<int[]> moves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+        printStatus("STEPPPPPPP");
 
-        boolean powerUP = myInfo.hasProperty(PacmanAgent.powerupPropertyName);
-        powerUpStatus.setEnabled(powerUP);
+        targetDuration++;
+        initializeHistoryMap(myInfo, history);
+        List<Move> niceMoves = moves.stream().map(Move::from).collect(toList());
+        powerUpStatus.setEnabled(myInfo.hasProperty(PacmanAgent.powerupPropertyName));
+        ghosts.clear();
 
-        Vector3f pos = myInfo.getPosition();
-        printStatus("Location x: " + pos.x + " y: " + pos.y);
+        myLocation = new Location((int) myInfo.getPosition().getX(), (int) myInfo.getPosition().getY());
+        printStatus("MY LOCATION" + myLocation);
+        if (niceMoves.size() == 1) {
+            return prepareReturn(myInfo, niceMoves.get(0), moves, "Default!", history);
+        }
 
-        float ghostDistance = Float.MAX_VALUE;
-        Location ghostLocation = null;
-        for (int i = -radiusX; i <= radiusX; i++) {
-            for (int j = -radiusY; j <= radiusY; j++) {
+        for (int i = -mySurroundings.getDimensionX() / 2; i <= mySurroundings.getDimensionX() / 2; i++) {
+            for (int j = -mySurroundings.getDimensionY() / 2; j <= mySurroundings.getDimensionY() / 2; j++) {
                 if (i == 0 && j == 0) continue;
-                Location tempLocation = new Location(myLocation.getX() + i, myLocation.getY() + j);
-                ArrayList<WorldEntity.WorldEntityInfo> neighPosInfos = mySurroundings.getWorldInfoAt(i, j);
+                Location tempLocation = new Location(i, j);
+                List<WorldEntityInfo> neighPosInfos = mySurroundings.getWorldInfoAt(i, j);
                 if (neighPosInfos != null) {
-                    for (WorldEntity.WorldEntityInfo info : neighPosInfos) {
-                        if (info.getIdentifier().compareToIgnoreCase("Pacman") == 0) {
-                            //Ignore myself
-                        } else if (info.getIdentifier().compareToIgnoreCase("Wall") == 0) {
-                            //Its a wall, who cares!
-                        } else if (info.getIdentifier().compareToIgnoreCase("Point") == 0 ||
-                                info.getIdentifier().compareToIgnoreCase("Powerup") == 0) {
-                            //Remember where it is!
-                            float currPointDistance = myLocation.distanceTo(tempLocation);
-                            points.add(tempLocation);
-                        } else if (info.getIdentifier().compareToIgnoreCase("Ghost") == 0) {
-                            //Remember him!
-                            float currGhostDistance = myLocation.distanceTo(tempLocation);
-                            if (currGhostDistance < ghostDistance) {
-                                ghostDistance = currGhostDistance;
-                                ghostLocation = tempLocation;
-                            }
-                        } else {
-                            printStatus("I dont know what " + info.getIdentifier() + " is!");
+                    for (WorldEntityInfo info : neighPosInfos) {
+                        points.remove(myLocation.add(tempLocation));
+                        powerUps.remove(myLocation.add(tempLocation));
+
+                        if (info.getIdentifier().compareToIgnoreCase("Point") == 0)
+                            points.add(myLocation.add(tempLocation));
+                        if (info.getIdentifier().compareToIgnoreCase("Powerup") == 0)
+                            powerUps.add(myLocation.add(tempLocation));
+                        if (info.getIdentifier().compareToIgnoreCase("Ghost") == 0) {
+                            ghosts.add(myLocation.add(tempLocation));
                         }
                     }
                 }
             }
         }
+        points.remove(myLocation);
+        powerUps.remove(myLocation);
 
-        //move toward the point
-        //pick next if arrived
-        if (targetLocation == myLocation) {
-            targetLocation = points.iterator().next();
-            targetDistance = myLocation.distanceTo(targetLocation);
-            targetDuration = 0;
+        if (!ghosts.isEmpty()) {
+            Location ghostTarget = ghosts.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
+
+            int ghostIndex = findClosest(niceMoves, ghostTarget.sub(myLocation));
+            if (powerUpStatus.isPowerUpEnabled() && Math.random() > 0.5) {
+                return prepareReturn(myInfo, niceMoves.get(ghostIndex), moves, "Chase", history);
+            }
+            niceMoves.remove(niceMoves.get(ghostIndex));
+
+            if (niceMoves.size() == 1) {
+                return prepareReturn(myInfo, niceMoves.get(0), moves, "Run no option", history);
+            }
+
+            if (!powerUps.isEmpty()) {
+                if (!targetPowerUp) {
+                    targetDuration = 0;
+                    targetPowerUp = true;
+                    targetLocation = powerUps.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
+                    int powerUpIndex = findClosest(niceMoves, targetLocation.sub(myLocation));
+                    return prepareReturn(myInfo, niceMoves.get(powerUpIndex), moves, "Chase powerUp", history);
+                }
+                return eat(true, moves, niceMoves, mySurroundings, myInfo);
+            }
+            return eat(true, moves, niceMoves, mySurroundings, myInfo);
         }
+        return eat(false, moves, niceMoves, mySurroundings, myInfo);
+    }
 
-        targetDuration++;
+    private int eat(boolean chased, ArrayList<int[]> moves, List<Move> niceMoves, PacmanVisibleWorld mySurroundings, WorldEntityInfo myInfo) {
+        if (!chased && !points.isEmpty()) {
+            niceMoves = niceMoves.stream().filter(e -> !powerUps.contains(myLocation.move(e))).collect(toList());
 
-        //sticking with target too long -> got stuck
-        //dont get stuck
-        if (targetDuration > 10) {
-            ArrayList<Location> pointList = new ArrayList<>(points);
-            int choice = r.nextInt(pointList.size());
-
-            targetLocation = pointList.get(choice);
-            targetDistance = myLocation.distanceTo(targetLocation);
-            targetDuration = 0;
-        }
-
-        //select move
-        float currMinPDistance = Float.MAX_VALUE;
-        Location nextLocation = myLocation;
-        int moveIndex = 0;
-
-        for (int i = moves.size() - 1; i >= 0; i--) {
-            int[] move = moves.get(i);
-            Location moveLocation = new Location(myLocation.getX() + move[0], myLocation.getY() + move[1]);
-            float newPDistance = moveLocation.distanceTo(targetLocation);
-            float newGDistance = (ghostDistance < Float.MAX_VALUE) ? moveLocation.distanceTo(ghostLocation) : Float.MAX_VALUE;
-            if (newPDistance <= currMinPDistance && newGDistance > 1) {
-                //that way
-                currMinPDistance = newPDistance;
-                nextLocation = moveLocation;
-                moveIndex = i;
+            if (niceMoves.size() == 1) {
+                return prepareReturn(myInfo, niceMoves.get(0), moves, "DO NOT EAT SUPER-COOKIE!", history);
             }
         }
 
-        points.remove(myLocation);
-        myLocation = nextLocation;
-        points.remove(myLocation);
+        if ((!chased && targetPowerUp) || targetLocation == null || myLocation.equals(targetLocation)) {
+//            printStatus((!chased && targetPowerUp) + " " + (targetLocation == null) + " " + myLocation.equals(targetLocation));
+            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+            if (target.isPresent()) {
+//                printStatus("CLOSEST" + target.get());
+                int index = findClosest(niceMoves, target.get().sub(myLocation));
+                targetLocation = target.get();
+                targetDuration = 0;
+                targetPowerUp = false;
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
+            }
+           target = powerUps.stream().min(comparing(myLocation::distanceTo));
+            if (target.isPresent()) {
+//                printStatus("CLOSEST" + target.get());
+                int index = findClosest(niceMoves, target.get().sub(myLocation));
+                targetLocation = target.get();
+                targetDuration = 0;
+                targetPowerUp = false;
+                return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest powerup", history);
+            }
+            targetLocation = null;
+            targetPowerUp = false;
+            targetDuration = 0;
+            if (niceMoves.size() > 1) {
+                removeLastFromHistory(niceMoves, myInfo, history);
+            }
+            Move move = random(niceMoves);
+            return prepareReturn(myInfo, move, moves, "Random " + chased, history);
+        }
 
-        return moveIndex;
+        if (targetDuration >= TARGET_DURATION_TIMEOUT) {
+            if(!targetPowerUp){
+                points.remove(targetLocation);  //todo debateable
+            }
+            if (chased) {
+                Optional<Location> target = powerUps.stream()
+                        .filter(e -> !targetLocation.equals(e))
+                        .min(comparing(myLocation::distanceTo));
+                if (target.isPresent()) {
+                    targetLocation = target.get();
+                    targetDuration = 0;
+                    targetPowerUp = true;
+                    var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+                    return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest powerUp", history);
+                }
+                return findAnotherPoint(niceMoves, moves, myInfo, "Chased but no powerup, gonna eat cookie :(");
+            }
+            return findAnotherPoint(niceMoves, moves, myInfo, "Gonna eat cookie :D");
+        }
+
+        //is something better
+//        if (!targetPowerUp) {
+//            Optional<Location> target = points.stream().min(comparing(myLocation::distanceTo));
+//            if (target.isPresent() && !targetLocation.equals(target.get())) {
+//                targetLocation = target.get();
+//                targetDuration = 0;
+//                targetPowerUp = false;
+//                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+//                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan cookie!" + targetLocation, history);
+//            }
+//        }
+//        if (targetPowerUp) {
+//            Optional<Location> target = powerUps.stream().min(comparing(myLocation::distanceTo));
+//            if (target.isPresent() && !targetLocation.equals(target.get())) {
+//                targetLocation = target.get();
+//                targetDuration = 0;
+//                targetPowerUp = false;
+//                var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+//                return prepareReturn(myInfo, niceMoves.get(index), moves, "New masterplan super-cookie!" + targetLocation, history);
+//            }
+//        }
+
+        var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+        return prepareReturn(myInfo, niceMoves.get(index), moves, "Execute the master plan! Target: " + targetLocation, history);
+    }
+
+    public int prepareReturn(WorldEntity.WorldEntityInfo myInfo, Move theMove, ArrayList<int[]> moves, String message, Map<Integer, List<Move>> history) {
+        printStatus("ID:" + myInfo.getID() + " " + message + " " + theMove);
+        history.get(myInfo.getID()).add(theMove);
+        return findIndex(moves, theMove);
+    }
+
+    private int findAnotherPoint(List<Move> niceMoves, ArrayList<int[]> moves, WorldEntityInfo myInfo, String message) {
+        Optional<Location> target = points.stream()
+                .filter(e -> !targetLocation.equals(e))
+                .min(comparing(myLocation::distanceTo));
+        if (target.isPresent()) {
+            targetLocation = target.get();
+            targetDuration = 0;
+            targetPowerUp = false;
+            var index = findClosest(niceMoves, targetLocation.sub(myLocation));
+            return prepareReturn(myInfo, niceMoves.get(index), moves, message, history);
+        }
+
+        targetLocation = null;
+        targetDuration = 0;
+        targetPowerUp = false;
+        if (niceMoves.size() > 1) {
+            removeLastFromHistory(niceMoves, myInfo, history);
+        }
+        Move move = random(niceMoves);
+        return prepareReturn(myInfo, move, moves, "Random chased ", history);
     }
 }
