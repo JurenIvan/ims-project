@@ -15,11 +15,11 @@ import static mmaracic.gameaiframework.WorldEntity.WorldEntityInfo;
 
 public class PacmanAI extends AgentAI {
 
-    public static final int TARGET_DURATION_TIMEOUT = 5;
+    public static final int TARGET_DURATION_TIMEOUT = 8;
     private static final PowerUpStatus powerUpStatus = PowerUpStatus.getInstance();
     private static final Map<Integer, List<Move>> history = new HashMap<>();
     private final HashSet<Location> points = new HashSet<>();
-    private final HashSet<Location> powerUps = new HashSet<>();
+    private final HashSet<Location> powerUps = new HashSet<>(List.of(new Location(-8,-8),new Location(-8,8),new Location(8,-8),new Location(8,8)));
     private final HashSet<Location> ghosts = new HashSet<>();
     private final Random r = new Random();
     private Location myLocation = new Location(0, 0);
@@ -71,13 +71,25 @@ public class PacmanAI extends AgentAI {
             Location ghostTarget = ghosts.stream().min(comparing(myLocation::distanceTo)).orElseThrow();
 
             int ghostIndex = findClosest(niceMoves, ghostTarget.sub(myLocation));
+            var closest = niceMoves.get(ghostIndex);
             if (powerUpStatus.isPowerUpEnabled() && Math.random() > 0.5) {
-                return prepareReturn(myInfo, niceMoves.get(ghostIndex), moves, "Chase", history);
+                return prepareReturn(myInfo, closest, moves, "Chase", history);
             }
-            niceMoves.remove(niceMoves.get(ghostIndex));
+            niceMoves.remove(closest);
 
             if (niceMoves.size() == 1) {
                 return prepareReturn(myInfo, niceMoves.get(0), moves, "Run no option", history);
+            }
+
+            //todo remove 2nd worst if prev bad
+            int ghostIndexNew = findClosest(niceMoves, ghostTarget.sub(myLocation));
+            var closestNew = niceMoves.get(ghostIndexNew);
+            if (myLocation.move(closest).distanceTo(ghostTarget) == myLocation.move(closestNew).distanceTo(ghostTarget)) {
+                printStatus("new condition");
+                niceMoves.remove(closestNew);
+                if (niceMoves.size() == 1) {
+                    return prepareReturn(myInfo, niceMoves.get(0), moves, "removed 2nd worst and had to do this", history);
+                }
             }
 
             if (!powerUps.isEmpty()) {
@@ -115,7 +127,7 @@ public class PacmanAI extends AgentAI {
                 targetPowerUp = false;
                 return prepareReturn(myInfo, niceMoves.get(index), moves, "Yummy new closest point", history);
             }
-           target = powerUps.stream().min(comparing(myLocation::distanceTo));
+            target = powerUps.stream().min(comparing(myLocation::distanceTo));
             if (target.isPresent()) {
 //                printStatus("CLOSEST" + target.get());
                 int index = findClosest(niceMoves, target.get().sub(myLocation));
@@ -134,8 +146,8 @@ public class PacmanAI extends AgentAI {
             return prepareReturn(myInfo, move, moves, "Random " + chased, history);
         }
 
-        if (targetDuration >= TARGET_DURATION_TIMEOUT) {
-            if(!targetPowerUp){
+        if (targetDuration >= TARGET_DURATION_TIMEOUT && !targetPowerUp) {
+            if (!targetPowerUp) {
                 points.remove(targetLocation);  //todo debateable
             }
             if (chased) {
